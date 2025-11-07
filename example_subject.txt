@@ -1,0 +1,14 @@
+# Example subject for a fugue
+# Format: Note Duration
+# Note: C4, D4, E4, etc. (C4 is middle C)
+# Duration: 1.0 = quarter note, 0.5 = eighth note, 2.0 = half note
+# Use REST for rests
+
+C4 1.0
+D4 1.0
+E4 1.0
+F4 1.0
+G4 2.0
+E4 1.0
+C4 1.0
+D4 2.0

@@ -110,9 +110,12 @@ class FugueGenerator:
             voice1_notes.append(note)
         # Add some accompaniment after subject
         subject_duration = self.subject.get_duration()
-        # Add rests during answer
-        for _ in range(int(subject_duration)):
-            voice1_notes.append(Note('REST', 1.0))
+        # Add rests during answer - use exact duration
+        remaining_duration = subject_duration
+        while remaining_duration > 0:
+            rest_duration = min(1.0, remaining_duration)
+            voice1_notes.append(Note('REST', rest_duration))
+            remaining_duration -= rest_duration
         # Repeat subject for episode
         for note in self.subject.notes:
             voice1_notes.append(note)
@@ -122,9 +125,12 @@ class FugueGenerator:
         # Voice 2: Answer (starts after subject, transposed up a 5th)
         answer = self.subject.transpose(7)  # 7 semitones = perfect 5th
         voice2_notes = []
-        # Add rests while subject plays
-        for _ in range(int(subject_duration)):
-            voice2_notes.append(Note('REST', 1.0))
+        # Add rests while subject plays - use exact duration
+        remaining_duration = subject_duration
+        while remaining_duration > 0:
+            rest_duration = min(1.0, remaining_duration)
+            voice2_notes.append(Note('REST', rest_duration))
+            remaining_duration -= rest_duration
         # Add answer
         for note in answer.notes:
             voice2_notes.append(note)
@@ -136,10 +142,13 @@ class FugueGenerator:
         
         # Voice 3: Subject again (starts after answer begins)
         voice3_notes = []
-        # Add rests while subject and part of answer play
-        rest_duration = subject_duration + subject_duration / 2
-        for _ in range(int(rest_duration)):
-            voice3_notes.append(Note('REST', 1.0))
+        # Add rests while subject and part of answer play - use exact duration
+        total_rest_duration = subject_duration + subject_duration / 2
+        remaining_duration = total_rest_duration
+        while remaining_duration > 0:
+            rest_duration = min(1.0, remaining_duration)
+            voice3_notes.append(Note('REST', rest_duration))
+            remaining_duration -= rest_duration
         # Add subject
         for note in self.subject.notes:
             voice3_notes.append(note)
@@ -212,7 +221,7 @@ def parse_input_file(filename):
     notes = []
     
     with open(filename, 'r') as f:
-        for line in f:
+        for line_num, line in enumerate(f, 1):
             line = line.strip()
             if not line or line.startswith('#'):
                 continue
@@ -220,10 +229,23 @@ def parse_input_file(filename):
             parts = line.split()
             if len(parts) == 1:
                 # Just note name, default duration
-                notes.append(Note(parts[0], 1.0))
+                try:
+                    notes.append(Note(parts[0], 1.0))
+                except ValueError as e:
+                    print(f"Warning: Line {line_num}: {e}")
+                    continue
             elif len(parts) == 2:
                 # Note name and duration
-                notes.append(Note(parts[0], float(parts[1])))
+                try:
+                    duration = float(parts[1])
+                    notes.append(Note(parts[0], duration))
+                except ValueError as e:
+                    print(f"Warning: Line {line_num}: Invalid format - {e}")
+                    continue
+            else:
+                # More than 2 parts - invalid format
+                print(f"Warning: Line {line_num}: Expected 'NoteName [Duration]', got: {line}")
+                continue
     
     return notes
 

@@ -12,6 +12,10 @@ class Note:
     """Represents a musical note with pitch and duration"""
     
     NOTE_NAMES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']
+    # Alternate names for notes (flats)
+    NOTE_ALIASES = {
+        'Db': 'C#', 'Eb': 'D#', 'Gb': 'F#', 'Ab': 'G#', 'Bb': 'A#'
+    }
     
     def __init__(self, name, duration=1.0):
         """
@@ -37,6 +41,10 @@ class Note:
         # Extract note name and octave
         note_name = name[:-1]
         octave = int(name[-1])
+        
+        # Handle flat notation by converting to sharp equivalent
+        if note_name in self.NOTE_ALIASES:
+            note_name = self.NOTE_ALIASES[note_name]
         
         # Find the note in the chromatic scale
         if note_name not in self.NOTE_NAMES:
@@ -96,6 +104,17 @@ class FugueGenerator:
         self.subject = Voice(subject_notes)
         self.voices = []
     
+    def _add_rest_notes(self, notes_list, total_duration):
+        """
+        Add rest notes to a notes list with the given total duration.
+        Breaks down duration into 1.0 beat chunks for better MIDI compatibility.
+        """
+        remaining_duration = total_duration
+        while remaining_duration > 0:
+            rest_duration = min(1.0, remaining_duration)
+            notes_list.append(Note('REST', rest_duration))
+            remaining_duration -= rest_duration
+    
     def generate_fugue(self):
         """
         Generate a basic fugue structure:
@@ -103,19 +122,15 @@ class FugueGenerator:
         - Voice 2: Answer (subject transposed up a perfect 5th = 7 semitones)
         - Voice 3: Subject again (entry after answer)
         """
+        subject_duration = self.subject.get_duration()
+        
         # Voice 1: Subject starts at beginning
         voice1_notes = []
         # Add subject
         for note in self.subject.notes:
             voice1_notes.append(note)
-        # Add some accompaniment after subject
-        subject_duration = self.subject.get_duration()
-        # Add rests during answer - use exact duration
-        remaining_duration = subject_duration
-        while remaining_duration > 0:
-            rest_duration = min(1.0, remaining_duration)
-            voice1_notes.append(Note('REST', rest_duration))
-            remaining_duration -= rest_duration
+        # Add rests during answer
+        self._add_rest_notes(voice1_notes, subject_duration)
         # Repeat subject for episode
         for note in self.subject.notes:
             voice1_notes.append(note)
@@ -125,12 +140,8 @@ class FugueGenerator:
         # Voice 2: Answer (starts after subject, transposed up a 5th)
         answer = self.subject.transpose(7)  # 7 semitones = perfect 5th
         voice2_notes = []
-        # Add rests while subject plays - use exact duration
-        remaining_duration = subject_duration
-        while remaining_duration > 0:
-            rest_duration = min(1.0, remaining_duration)
-            voice2_notes.append(Note('REST', rest_duration))
-            remaining_duration -= rest_duration
+        # Add rests while subject plays
+        self._add_rest_notes(voice2_notes, subject_duration)
         # Add answer
         for note in answer.notes:
             voice2_notes.append(note)
@@ -142,13 +153,10 @@ class FugueGenerator:
         
         # Voice 3: Subject again (starts after answer begins)
         voice3_notes = []
-        # Add rests while subject and part of answer play - use exact duration
+        # Add rests: wait for subject to finish, plus half of answer duration
+        # This creates the traditional fugue stretto effect where voices overlap
         total_rest_duration = subject_duration + subject_duration / 2
-        remaining_duration = total_rest_duration
-        while remaining_duration > 0:
-            rest_duration = min(1.0, remaining_duration)
-            voice3_notes.append(Note('REST', rest_duration))
-            remaining_duration -= rest_duration
+        self._add_rest_notes(voice3_notes, total_rest_duration)
         # Add subject
         for note in self.subject.notes:
             voice3_notes.append(note)

@@ -50,7 +50,8 @@ NoteName Duration
 
 - **NoteName**: Musical note (e.g., C4, D4, E4, F#4, Bb4, REST)
   - C4 is middle C
-  - Add # for sharp (C#4)
+  - Add # for sharp (C#4, F#4)
+  - Use b for flat (Bb4, Eb4)
   - Use REST for rests
 - **Duration**: Number of beats (optional, default: 1.0)
   - 1.0 = quarter note
